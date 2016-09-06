@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using ApprovalTests;
 using GitVersion;
 using GitVersion.Helpers;
 using NUnit.Framework;
@@ -89,6 +88,21 @@ branches:
     }
 
     [Test]
+    public void CanRemoveTag()
+    {
+        const string text = @"
+next-version: 2.0.0
+branches:
+    releases?[/-]:
+        tag: """"";
+        SetupConfigFileContent(text);
+        var config = ConfigurationProvider.Provide(repoPath, fileSystem);
+
+        config.NextVersion.ShouldBe("2.0.0");
+        config.Branches["releases?[/-]"].Tag.ShouldBe(string.Empty);
+    }
+
+    [Test]
     public void CanProvideConfigForNewBranch()
     {
         const string text = @"
@@ -103,12 +117,42 @@ branches:
     }
 
     [Test]
+    public void NextVersionCanBeInteger()
+    {
+        const string text = "next-version: 2";
+        SetupConfigFileContent(text);
+        var config = ConfigurationProvider.Provide(repoPath, fileSystem);
+
+        config.NextVersion.ShouldBe("2.0");
+    }
+
+    [Test]
+    public void NextVersionCanHaveEnormousMinorVersion()
+    {
+        const string text = "next-version: 2.118998723";
+        SetupConfigFileContent(text);
+        var config = ConfigurationProvider.Provide(repoPath, fileSystem);
+
+        config.NextVersion.ShouldBe("2.118998723");
+    }
+
+    [Test]
+    public void NextVersionCanHavePatch()
+    {
+        const string text = "next-version: 2.12.654651698";
+        SetupConfigFileContent(text);
+        var config = ConfigurationProvider.Provide(repoPath, fileSystem);
+
+        config.NextVersion.ShouldBe("2.12.654651698");
+    }
+    
+    [Test]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void CanWriteOutEffectiveConfiguration()
     {
         var config = ConfigurationProvider.GetEffectiveConfigAsString(repoPath, fileSystem);
 
-        Approvals.Verify(config);
+        config.ShouldMatchApproved();
     }
 
     [Test]
